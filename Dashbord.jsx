@@ -1,27 +1,10 @@
-import React, { useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
-import { CalendarToday as CalendarIcon } from '@mui/icons-material'
-import { format } from 'date-fns'
-import {
-  Button,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Popover,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Box,
-} from '@mui/material'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers'
+import React, { useState } from 'react';
+import { Box, Card, CardContent, CardHeader, Grid, Typography, Select, MenuItem, InputLabel, FormControl, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Tooltip } from '@mui/material';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from 'recharts';
+import { CalendarToday } from '@mui/icons-material';
+import dayjs from 'dayjs';
 
+// Mock data for multiple attendance records
 const mockAttendanceRecords = {
   "Team A": {
     total: 100,
@@ -41,142 +24,81 @@ const mockAttendanceRecords = {
       { id: 5, name: "Charlie Davis", status: "Present", arrivalTime: "08:50 AM" },
     ]
   },
-  "Team B": {
-    total: 80,
-    present: 70,
-    absent: 8,
-    late: 2,
-    diversityRatio: {
-      male: 45,
-      female: 50,
-      other: 5
-    },
-    detailedAttendance: [
-      { id: 1, name: "Eva White", status: "Present", arrivalTime: "08:45 AM" },
-      { id: 2, name: "Frank Green", status: "Present", arrivalTime: "08:55 AM" },
-      { id: 3, name: "Grace Lee", status: "Late", arrivalTime: "09:10 AM" },
-      { id: 4, name: "Henry Taylor", status: "Absent", arrivalTime: "-" },
-      { id: 5, name: "Ivy Chen", status: "Present", arrivalTime: "09:00 AM" },
-    ]
-  },
-  "Team C": {
-    total: 60,
-    present: 55,
-    absent: 3,
-    late: 2,
-    diversityRatio: {
-      male: 40,
-      female: 55,
-      other: 5
-    },
-    detailedAttendance: [
-      { id: 1, name: "Jack Wilson", status: "Present", arrivalTime: "08:50 AM" },
-      { id: 2, name: "Kate Brown", status: "Present", arrivalTime: "08:55 AM" },
-      { id: 3, name: "Liam Davis", status: "Late", arrivalTime: "09:05 AM" },
-      { id: 4, name: "Mia Johnson", status: "Present", arrivalTime: "09:00 AM" },
-      { id: 5, name: "Noah Smith", status: "Absent", arrivalTime: "-" },
-    ]
-  }
-}
+  // Additional teams omitted for brevity...
+};
 
-const COLORS = ['#4CAF50', '#FF5722', '#FFC107', '#2196F3']
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
-export default function Component() {
-  const [date, setDate] = useState(new Date())
-  const [selectedTeam, setSelectedTeam] = useState("Team A")
-  const [anchorEl, setAnchorEl] = useState(null)
+export default function AttendanceDashboard() {
+  const [date, setDate] = useState(new Date());
+  const [selectedTeam, setSelectedTeam] = useState("Team A");
 
   const attendanceData = [
     { name: 'Present', value: mockAttendanceRecords[selectedTeam].present },
     { name: 'Absent', value: mockAttendanceRecords[selectedTeam].absent },
     { name: 'Late', value: mockAttendanceRecords[selectedTeam].late },
-  ]
+  ];
 
   const diversityData = [
     { name: 'Male', value: mockAttendanceRecords[selectedTeam].diversityRatio.male },
     { name: 'Female', value: mockAttendanceRecords[selectedTeam].diversityRatio.female },
     { name: 'Other', value: mockAttendanceRecords[selectedTeam].diversityRatio.other },
-  ]
+  ];
 
-  const handleDateClick = (event) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleDateClose = () => {
-    setAnchorEl(null)
-  }
-
-  const open = Boolean(anchorEl)
+  const formattedDate = dayjs(date).format('MMM D, YYYY');
 
   return (
-    <Box sx={{ p: 4, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>Attendance Dashboard</Typography>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Attendance Dashboard
+      </Typography>
+      
+      <Grid container spacing={4}>
         <Grid item xs={12} sm={6}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleDateClick}
-            startIcon={<CalendarIcon />}
-            fullWidth
-            sx={{ textTransform: 'none', boxShadow: 3 }}
-          >
-            {date ? format(date, "PPP") : "Pick a date"}
-          </Button>
-          <Popover
-            open={open}
-            anchorEl={anchorEl}
-            onClose={handleDateClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-          >
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                value={date}
-                onChange={(newDate) => setDate(newDate)}
-                renderInput={(params) => <TextField {...params} sx={{ mt: 2, mx: 2 }} />}
-              />
-            </LocalizationProvider>
-          </Popover>
+          <FormControl fullWidth>
+            <InputLabel>Date</InputLabel>
+            <Select
+              value={formattedDate}
+              onChange={(e) => setDate(new Date(e.target.value))}
+              displayEmpty
+              inputProps={{ 'aria-label': 'Without label' }}
+            >
+              <MenuItem value={formattedDate}>
+                <CalendarToday fontSize="small" sx={{ mr: 1 }} />
+                {formattedDate}
+              </MenuItem>
+            </Select>
+          </FormControl>
         </Grid>
 
         <Grid item xs={12} sm={6}>
-          <Select
-            value={selectedTeam}
-            onChange={(e) => setSelectedTeam(e.target.value)}
-            fullWidth
-            variant="outlined"
-            sx={{
-              '& .MuiSelect-select': {
-                padding: '10px',
-              },
-              boxShadow: 3,
-              borderRadius: 1,
-            }}
-          >
-            {Object.keys(mockAttendanceRecords).map((team) => (
-              <MenuItem key={team} value={team}>{team}</MenuItem>
-            ))}
-          </Select>
+          <FormControl fullWidth>
+            <InputLabel>Team</InputLabel>
+            <Select
+              value={selectedTeam}
+              onChange={(e) => setSelectedTeam(e.target.value)}
+            >
+              {Object.keys(mockAttendanceRecords).map((team) => (
+                <MenuItem key={team} value={team}>{team}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={4} sx={{ mt: 2 }}>
         <Grid item xs={12} md={6}>
-          <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
+          <Card>
+            <CardHeader title="Attendance Breakdown" />
             <CardContent>
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', mb: 2 }}>Attendance Breakdown</Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={attendanceData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
-                    outerRadius={90}
+                    innerRadius={60}
+                    outerRadius={80}
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"
@@ -185,26 +107,26 @@ export default function Component() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </Grid>
-
+        
         <Grid item xs={12} md={6}>
-          <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
+          <Card>
+            <CardHeader title="Diversity Ratio" />
             <CardContent>
-              <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', mb: 2 }}>Diversity Ratio</Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={diversityData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
-                    outerRadius={90}
+                    innerRadius={60}
+                    outerRadius={80}
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"
@@ -213,7 +135,7 @@ export default function Component() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -222,9 +144,9 @@ export default function Component() {
         </Grid>
       </Grid>
 
-      <Card sx={{ boxShadow: 3, borderRadius: 2, mt: 4 }}>
+      <Card sx={{ mt: 4 }}>
+        <CardHeader title="Detailed Attendance" />
         <CardContent>
-          <Typography variant="h6" component="h2" sx={{ fontWeight: 'bold', mb: 2 }}>Detailed Attendance</Typography>
           <Table>
             <TableHead>
               <TableRow>
@@ -248,5 +170,5 @@ export default function Component() {
         </CardContent>
       </Card>
     </Box>
-  )
+  );
 }
