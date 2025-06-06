@@ -14,11 +14,11 @@ CACERT_PATH = '/path/to/cacert.pem'
 
 # === Marley Status to Expected Wetrack Status Mapping ===
 expected_mapping = {
-    "Active": "Allocated",
-    "To be reused": "Stock",
-    "Given to technical teams": "Store to Proximit",
-    "To Check": "Investigation",
-    "To be destroyed": "Ewaste"
+    ("Active", "In Use"): "Allocated",
+    ("To be reused", "Unused"): "Stock",
+    ("Given to technical teams", "Unused"): "Store to Proximit",
+    ("To Check", "Unused"): "Investigation",
+    ("To be destroyed", "Unused"): "Ewaste"
 }
 
 # === Load Wetrack Excel File ===
