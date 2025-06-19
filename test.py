@@ -1,100 +1,40 @@
-import pandas as pd
-import requests
-import json
-import time
-from requests.auth import HTTPBasicAuth
-
-# === Config ===
-WETRACK_EXCEL_PATH = 'wetrack_data.xlsx'
-OUTPUT_REPORT_PATH = 'marley_wetrack_comparison_report.xlsx'
-API_BASE_URL = 'https://asset/api/v2/hardware/desktop/'
-USERNAME = 'gsc_dws_usu_wt'
-PASSWORD = 'your_password_here'
-CACERT_PATH = '/path/to/cacert.pem'
-
-# === Marley Status to Expected Wetrack Status Mapping ===
-expected_mapping = {
-    ("Active", "In Use"): "Allocated",
-    ("To be reused", "Unused"): "Stock",
-    ("Given to technical teams", "Unused"): "Store to Proximit",
-    ("To Check", "Unused"): "Investigation",
-    ("To be destroyed", "Unused"): "Ewaste"
-}
-
-# === Load Wetrack Excel File ===
-wetrack_df = pd.read_excel(WETRACK_EXCEL_PATH)
-
-# === Output Collector ===
-marley_results = []
-
-# === Loop Through Wetrack Rows ===
-for index, row in wetrack_df.iterrows():
-    asset_id = str(row.get('asset_id', '')).strip()
-    wetrack_igg = str(row.get('igg', '')).strip()
-    wetrack_status = str(row.get('wetrack_status', '')).strip()
-    wetrack_serial = str(row.get('serial_number', '')).strip()
-
-    marley_igg = marley_status = marley_serial = user_name = match_result = ""
-
+for index, row in df.iterrows():
     try:
-        # === Sleep after every 5 requests ===
-        if index > 0 and index % 5 == 0:
-            print("⏳ Sleeping for 3 minutes after 5 requests...")
-            time.sleep(180)
-
-        # === API Request ===
-        response = requests.get(
-            API_BASE_URL + asset_id,
-            verify=CACERT_PATH,
-            auth=HTTPBasicAuth(USERNAME, PASSWORD)
+        values = (
+            row.get('Assetid'), row.get('SerialNo'), row.get('Brand'), row.get('Building'), row.get('Model'),
+            row.get('POID'), row.get('Status'), row.get('Comments'), row.get('DOA'), row.get('username'),
+            row.get('fullname'), row.get('email'), row.get('city'), row.get('deliveryfunction'), row.get('type'),
+            row.get('Podate'), row.get('voucher'), row.get('lifespan'), row.get('tdate'), row.get('jump'),
+            row.get('GRNDate1'), row.get('ReceiptID'), row.get('ReceiptDate'), row.get('GRNDate'),
+            row.get('deliverydate'), row.get('store'), row.get('sez_date'), row.get('sez_renewal'),
+            row.get('expiry'), row.get('engineername'), row.get('changeofloc'), row.get('hostnamechecker'),
+            row.get('stop'), row.get('FARAssetID'), row.get('PAVVsFAR'), row.get('bonded_location'),
+            row.get('wave'), row.get('ewaste'), row.get('SG_OS'), row.get('warranty'), row.get('reimage_date'),
+            row.get('order_type'), row.get('allocated_status'), row.get('allocation_type'), row.get('rdpbuilding'),
+            row.get('rdpworkstation'), row.get('nova_configured'), row.get('nova_configure_date'),
+            row.get('invoice_no'), row.get('sez_approval_status'), row.get('emailid'), row.get('sez_unit'),
+            row.get('boe'), row.get('sez_valid'), row.get('project'), row.get('hardware_serial'),
+            row.get('dban_status'), row.get('dban_date'), row.get('ram')
         )
-        data = json.loads(response.text)
 
-        marley_serial = str(data.get('fixed', {}).get('serial_number', '')).strip()
-        marley_igg = str(data.get('identification', {}).get('igg', '')).strip()
-        user_name = str(data.get('identification', {}).get('user_name', '')).strip()
-        marley_status = str(data.get('identification', {}).get('status', '')).strip()
+        placeholders = ', '.join(['%s'] * len(values))
 
-        # === Expected Status Mapping ===
-        expected_status = expected_mapping.get(marley_status)
+        sql = f"""
+            INSERT INTO public.laptop_archive (
+                "Asset id", "Serial No", "Brand", "Building", "Model", "PO ID", "Status", "Comments", "DOA",
+                username, fullname, email, city, "delivery function", type, "PO date", voucher, lifespan, tdate,
+                jump, "GRN Date1", "Receipt ID", "Receipt Date", "GRN Date", "delivery date", store,
+                sez_date, sez_renewal, expiry, engineername, changeofloc, hostnamechecker, stop,
+                "FAR Asset ID", "PAVVsFAR", bonded_location, wave, ewaste, "SG_OS", warranty, reimage_date,
+                order_type, allocated_status, allocation_type, rdpbuilding, rdpworkstation, nova_configured,
+                nova_configure_date, invoice_no, sez_approval_status, emailid, sez_unit, boe, sez_valid,
+                project, hardware_serial, dban_status, dban_date, ram
+            ) VALUES ({placeholders})
+        """
 
-        if expected_status is None:
-            match_result = f"No mapping for Marley status: '{marley_status}'"
-        elif expected_status.lower() not in wetrack_status.lower():
-            match_result = f"Expected '{expected_status}' in Wetrack, got '{wetrack_status}'"
-        elif expected_status.lower() == "allocated":
-            if not marley_igg or not wetrack_igg:
-                match_result = "Missing IGG for Allocated"
-            elif marley_igg != wetrack_igg:
-                match_result = "IGG mismatch for Allocated"
-            elif marley_serial != wetrack_serial:
-                match_result = "Serial number mismatch"
-            else:
-                match_result = "Yes"
-        else:
-            if wetrack_igg:
-                match_result = "Unexpected IGG for non-Allocated status"
-            elif marley_serial != wetrack_serial:
-                match_result = "Serial number mismatch"
-            else:
-                match_result = "Yes"
+        curPostgress.execute(sql, values)
 
     except Exception as e:
-        match_result = f"Error: {str(e)}"
-
-    marley_results.append({
-        "asset_id": asset_id,
-        "marley_serial": marley_serial,
-        "wetrack_serial": wetrack_serial,
-        "marley_igg": marley_igg,
-        "wetrack_igg": wetrack_igg,
-        "user_name": user_name,
-        "marley_status": marley_status,
-        "wetrack_status": wetrack_status,
-        "status_match": match_result
-    })
-
-# === Save Report ===
-df_final = pd.DataFrame(marley_results)
-df_final.to_excel(OUTPUT_REPORT_PATH, index=False)
-print(f"✅ Report saved to: {OUTPUT_REPORT_PATH}")
+        print(f"❌ Error at index {index}: {e}")
+        print(f"👉 Row values: {values}")
+        break  # Stop loop on first error
